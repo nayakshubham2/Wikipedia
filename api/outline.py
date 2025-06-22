@@ -6,7 +6,7 @@ from bs4 import BeautifulSoup
 
 app = FastAPI()
 
-# Enable CORS (Allow all origins)
+# Enable CORS for all origins and GET requests
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -14,28 +14,27 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-@app.get("/", response_class=PlainTextResponse)
-def get_outline(country: str = Query(..., min_length=1)):
-    # Format Wikipedia URL
-    base_url = "https://en.wikipedia.org/wiki/"
-    url = base_url + country.replace(" ", "_")
+@app.get("/api/outline", response_class=PlainTextResponse)
+async def get_outline(country: str = Query(..., description="Country name to fetch Wikipedia outline for")):
+    wikipedia_url = f"https://en.wikipedia.org/wiki/{country.replace(' ', '_')}"
 
-    # Fetch page
-    response = requests.get(url)
-    if response.status_code != 200:
-        raise HTTPException(status_code=404, detail="Wikipedia page not found")
+    try:
+        response = requests.get(wikipedia_url, timeout=10)
+        response.raise_for_status()
+    except requests.exceptions.RequestException:
+        raise HTTPException(status_code=404, detail=f"Wikipedia page for '{country}' not found.")
 
     soup = BeautifulSoup(response.text, "html.parser")
 
-    # Extract all headings h1-h6
-    headings = soup.find_all(["h1", "h2", "h3", "h4", "h5", "h6"])
+    # Get all headings in order
+    headings = soup.find_all(['h1', 'h2', 'h3', 'h4', 'h5', 'h6'])
 
     markdown = ["## Contents\n"]
     for tag in headings:
-        level = int(tag.name[1])
         text = tag.get_text().strip()
         if text.lower() in ["jump to navigation", "jump to search"]:
             continue
+        level = int(tag.name[1])
         markdown.append(f"{'#' * level} {text}")
 
     return "\n\n".join(markdown)
