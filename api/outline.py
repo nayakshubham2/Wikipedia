@@ -25,19 +25,23 @@ def generate_outline(country: str) -> str:
 
     soup = BeautifulSoup(response.text, "html.parser")
 
-    # Extract headings
-    headings = soup.find_all(['h1', 'h2', 'h3', 'h4', 'h5', 'h6'])
+    headings = soup.find_all(["h1", "h2", "h3", "h4", "h5", "h6"])
+    outline = "## Contents\n\n"
 
-    markdown = ["## Contents\n"]
+    seen_titles = set()
+
     for tag in headings:
-        text = tag.get_text().strip()
-        if text.lower() in ["jump to navigation", "jump to search"]:
+        title = tag.get_text(strip=True)
+
+        # Avoid duplicate page title headers or unwanted Wikipedia boilerplate
+        if not title or title in seen_titles or title.lower() in ["references", "external links", "see also", "navigation menu"]:
             continue
+
+        seen_titles.add(title)
         level = int(tag.name[1])
-        markdown.append(f"{'#' * level} {text}")
+        outline += f"{'#' * level} {title}\n\n"
 
-    return "\n\n".join(markdown)
-
+    return {"markdown": outline.strip()}
 # ✅ API endpoint with optional query parameter
 @app.get("/", response_class=PlainTextResponse)
 async def get_outline(country: str = Query("India", description="Country name to fetch Wikipedia outline for")):
