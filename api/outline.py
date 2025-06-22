@@ -14,8 +14,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-@app.get("/api/outline", response_class=PlainTextResponse)
-async def get_outline(country: str = Query(..., description="Country name to fetch Wikipedia outline for")):
+def generate_outline(country: str) -> str:
     wikipedia_url = f"https://en.wikipedia.org/wiki/{country.replace(' ', '_')}"
 
     try:
@@ -26,7 +25,7 @@ async def get_outline(country: str = Query(..., description="Country name to fet
 
     soup = BeautifulSoup(response.text, "html.parser")
 
-    # Get all headings in order
+    # Extract headings
     headings = soup.find_all(['h1', 'h2', 'h3', 'h4', 'h5', 'h6'])
 
     markdown = ["## Contents\n"]
@@ -38,3 +37,13 @@ async def get_outline(country: str = Query(..., description="Country name to fet
         markdown.append(f"{'#' * level} {text}")
 
     return "\n\n".join(markdown)
+
+# ✅ API endpoint with optional query parameter
+@app.get("/api/outline", response_class=PlainTextResponse)
+async def get_outline(country: str = Query("India", description="Country name to fetch Wikipedia outline for")):
+    return generate_outline(country)
+
+# ✅ Default root (/) route also returns India outline
+@app.get("/", response_class=PlainTextResponse)
+async def root():
+    return generate_outline("India")
