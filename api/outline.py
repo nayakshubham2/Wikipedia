@@ -14,7 +14,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-@app.get("/api/outline", response_class=PlainTextResponse)
+@app.get("/", response_class=PlainTextResponse)
 def get_outline(country: str = Query(..., min_length=1)):
     # Format Wikipedia URL
     base_url = "https://en.wikipedia.org/wiki/"
