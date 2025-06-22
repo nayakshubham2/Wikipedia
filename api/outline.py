@@ -39,11 +39,7 @@ def generate_outline(country: str) -> str:
     return "\n\n".join(markdown)
 
 # ✅ API endpoint with optional query parameter
-@app.get("/api/outline", response_class=PlainTextResponse)
+@app.get("/", response_class=PlainTextResponse)
 async def get_outline(country: str = Query("India", description="Country name to fetch Wikipedia outline for")):
     return generate_outline(country)
 
-# ✅ Default root (/) route also returns India outline
-@app.get("/", response_class=PlainTextResponse)
-async def root():
-    return generate_outline("India")
